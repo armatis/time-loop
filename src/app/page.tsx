@@ -1,65 +1,229 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useTimerStore } from '@/store/useTimerStore';
+import { flattenTree } from '@/lib/flattenTree';
+import { LoopItem } from '@/components/LoopItem';
+import { TimerItem } from '@/components/TimerItem';
+import { Dashboard } from '@/components/Dashboard';
+import { RunnerOverlay } from '@/components/RunnerOverlay';
+import { LoopNode, PlayableEvent } from '@/types/timer';
+import { ArrowLeft, Edit2, Play } from 'lucide-react';
+import { AudioEngine } from '@/lib/audio';
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 
 export default function Home() {
+  const {
+    activeWorkoutId,
+    setActiveWorkout,
+    workouts,
+    updateWorkoutName,
+    moveNode,
+    getNode,
+    startRunner,
+    runnerStatus,
+    tick
+  } = useTimerStore();
+
+  const [flattenedEvents, setFlattenedEvents] = useState<PlayableEvent[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Computed from store
+  const activeWorkout = workouts.find(w => w.id === activeWorkoutId);
+  const rootNode = activeWorkout?.rootNode || null;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // RUNNER ENGINE
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.warn('Wake Lock error:', err);
+      }
+    };
+
+    if (runnerStatus === 'running') {
+      // 1. Wake Lock
+      requestWakeLock();
+
+      // 2. Audio Context Init (User Gesture Proxy)
+      AudioEngine.init();
+
+      // 3. Tick Loop
+      interval = setInterval(() => {
+        // Check state directly to avoid stale closures
+        const state = useTimerStore.getState();
+        const { timeLeft, isMuted } = state;
+
+        if (!isMuted) {
+          if (timeLeft <= 4 && timeLeft > 1) { // 3, 2, 1 (timeLeft is decremented in tick, checking BEFORE tick)
+            // Actually logic: if timeLeft is 3, 2, 1.
+            // If we play at 3, it beeps.
+            // Be precise: if timeLeft === 4 (about to be 3?), no.
+            // Standard: Beep ON 3, ON 2, ON 1.
+            AudioEngine.playTick();
+          } else if (timeLeft === 1) {
+            // Next tick will be 0 (switch)
+            AudioEngine.playSwitch();
+          }
+        }
+
+        tick();
+      }, 1000);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (wakeLock) wakeLock.release();
+    };
+  }, [runnerStatus, tick]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  useEffect(() => {
+    // We no longer auto-init a mock tree here. 
+    // The Dashboard's "Create" button handles creating a fresh tree.
+    // If we have no workouts, the Dashboard shows the Empty State.
+  }, []);
+
+  useEffect(() => {
+    if (rootNode) {
+      const events = flattenTree(rootNode);
+      setFlattenedEvents(events);
+    } else {
+      setFlattenedEvents([]);
+    }
+  }, [rootNode]);
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      moveNode(active.id as string, over.id as string);
+    }
+    setActiveId(null);
+  }
+
+  // Helper to render the overlay item
+  const renderOverlay = () => {
+    if (!activeId) return null;
+    const node = getNode(activeId);
+    if (!node) return null;
+
+    if (node.type === 'atomic') {
+      return <TimerItem node={node} parentId="overlay" />;
+    } else {
+      return <LoopItem node={node} parentId="overlay" />;
+    }
+  };
+
+  if (!isMounted) return null;
+
+  // VIEW: DASHBOARD
+  if (!activeWorkoutId || !rootNode) {
+    return <Dashboard />;
+  }
+
+  // VIEW: EDITOR
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="min-h-screen p-8 font-[family-name:var(--font-geist-sans)] max-w-3xl mx-auto">
+      <RunnerOverlay />
+
+      {/* HEADER WITH BACK BUTTON & NAME EDIT */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
+        <div className="flex items-center gap-4 w-full">
+          <button
+            onClick={() => setActiveWorkout(null)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            title="Back to Dashboard"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <ArrowLeft size={24} />
+          </button>
+
+          <div className="flex-1">
+            <input
+              type="text"
+              value={activeWorkout?.name || 'Workout'}
+              onChange={(e) => activeWorkout && updateWorkoutName(activeWorkout.id, e.target.value)}
+              className="text-2xl font-bold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-full transition-all px-2 py-1"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <div className="text-xs text-gray-400 px-2 mt-1">
+              Recursive Timer Builder
+            </div>
+          </div>
+
+          <button
+            onClick={startRunner}
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
           >
-            Documentation
-          </a>
+            <Play size={20} className="fill-current" />
+            Start Workout
+          </button>
         </div>
-      </main>
-    </div>
+      </div>
+
+      <div className="grid gap-8">
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              Workout Structure
+            </h2>
+          </div>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <LoopItem node={rootNode} parentId="root" />
+
+            <DragOverlay>
+              {activeId ? (
+                <div className="opacity-90 rotate-2 shadow-2xl cursor-grabbing">
+                  {renderOverlay()}
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </section>
+
+        <section className="p-4 border rounded bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+          <h2 className="font-semibold mb-2">Flattened Events (Preview)</h2>
+          <pre className="text-xs bg-black text-green-400 p-4 rounded overflow-auto max-h-[300px]">
+            {JSON.stringify(flattenedEvents, null, 2)}
+          </pre>
+        </section>
+      </div>
+    </main>
   );
 }
