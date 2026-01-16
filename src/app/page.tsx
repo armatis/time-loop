@@ -48,16 +48,27 @@ export default function Home() {
 
   // RUNNER ENGINE
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    let wakeLock: any = null;
+    let interval: NodeJS.Timeout | null = null;
+    let wakeLock: WakeLockSentinel | null = null;
 
     const requestWakeLock = async () => {
       try {
         if ('wakeLock' in navigator) {
-          wakeLock = await (navigator as any).wakeLock.request('screen');
+          wakeLock = await navigator.wakeLock.request('screen');
         }
       } catch (err) {
         console.warn('Wake Lock error:', err);
+      }
+    };
+
+    const releaseWakeLock = async () => {
+      if (wakeLock) {
+        try {
+          await wakeLock.release();
+          wakeLock = null;
+        } catch (err) {
+          console.warn('Wake Lock release error:', err);
+        }
       }
     };
 
@@ -72,17 +83,20 @@ export default function Home() {
       interval = setInterval(() => {
         // Check state directly to avoid stale closures
         const state = useTimerStore.getState();
-        const { timeLeft, isMuted } = state;
+        const { timeLeft, isMuted, runnerStatus: currentStatus } = state;
+
+        // Double-check we're still running (prevents race conditions)
+        if (currentStatus !== 'running') {
+          return;
+        }
 
         if (!isMuted) {
-          if (timeLeft <= 4 && timeLeft > 1) { // 3, 2, 1 (timeLeft is decremented in tick, checking BEFORE tick)
-            // Actually logic: if timeLeft is 3, 2, 1.
-            // If we play at 3, it beeps.
-            // Be precise: if timeLeft === 4 (about to be 3?), no.
-            // Standard: Beep ON 3, ON 2, ON 1.
+          // Countdown beeps at 3, 2, 1 seconds remaining
+          if (timeLeft >= 1 && timeLeft <= 3) {
             AudioEngine.playTick();
-          } else if (timeLeft === 1) {
-            // Next tick will be 0 (switch)
+          }
+          // Switch sound when transitioning to next event
+          if (timeLeft === 1) {
             AudioEngine.playSwitch();
           }
         }
@@ -92,8 +106,10 @@ export default function Home() {
     }
 
     return () => {
-      clearInterval(interval);
-      if (wakeLock) wakeLock.release();
+      if (interval) {
+        clearInterval(interval);
+      }
+      releaseWakeLock();
     };
   }, [runnerStatus, tick]);
 
