@@ -116,14 +116,14 @@ export function RunnerOverlay() {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleMute}
-                        className="p-3 bg-black/20 hover:bg-black/40 rounded-full transition-colors"
+                        className="p-3 bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer"
                         title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
                     >
                         {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                     </button>
                     <button
                         onClick={exitRunner}
-                        className="p-3 bg-black/20 hover:bg-black/40 rounded-full transition-colors"
+                        className="p-3 bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer"
                         title="Exit (Esc)"
                     >
                         <X size={20} />
@@ -142,14 +142,14 @@ export function RunnerOverlay() {
                         <div className="flex justify-center gap-4 flex-wrap">
                             <button
                                 onClick={startRunner}
-                                className="flex items-center gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-white text-slate-900 rounded-full text-lg sm:text-xl font-bold hover:scale-105 transition-transform"
+                                className="flex items-center gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-white text-slate-900 rounded-full text-lg sm:text-xl font-bold hover:scale-105 transition-transform cursor-pointer"
                             >
                                 <RotateCcw size={24} />
                                 Restart
                             </button>
                             <button
                                 onClick={exitRunner}
-                                className="px-6 sm:px-8 py-3 sm:py-4 bg-white/20 hover:bg-white/30 rounded-full text-lg sm:text-xl font-bold transition-colors"
+                                className="px-6 sm:px-8 py-3 sm:py-4 bg-white/20 hover:bg-white/30 rounded-full text-lg sm:text-xl font-bold transition-colors cursor-pointer"
                             >
                                 Done
                             </button>
@@ -196,7 +196,7 @@ export function RunnerOverlay() {
                             {/* Previous */}
                             <button
                                 onClick={skipToPrevious}
-                                className="p-4 sm:p-5 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95"
+                                className="p-4 sm:p-5 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
                                 title="Previous (Left Arrow)"
                             >
                                 <SkipBack size={28} className="fill-current" />
@@ -205,7 +205,7 @@ export function RunnerOverlay() {
                             {/* Play/Pause */}
                             <button
                                 onClick={togglePause}
-                                className="p-6 sm:p-8 bg-white text-slate-900 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all"
+                                className="p-6 sm:p-8 bg-white text-slate-900 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                 title={isPaused ? 'Play (Space)' : 'Pause (Space)'}
                             >
                                 {isPaused ? (
@@ -218,7 +218,7 @@ export function RunnerOverlay() {
                             {/* Next */}
                             <button
                                 onClick={skipToNext}
-                                className="p-4 sm:p-5 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95"
+                                className="p-4 sm:p-5 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
                                 title="Next (Right Arrow)"
                             >
                                 <SkipForward size={28} className="fill-current" />
