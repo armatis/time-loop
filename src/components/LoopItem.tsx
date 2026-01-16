@@ -52,7 +52,7 @@ export function LoopItem({ node, parentId }: LoopItemProps) {
                 {parentId !== 'root' && (
                     <button
                         onClick={() => deleteNode(node.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors cursor-pointer"
                         title="Delete Loop"
                     >
                         <Trash2 size={16} />
@@ -82,14 +82,14 @@ export function LoopItem({ node, parentId }: LoopItemProps) {
             <div className="flex gap-2 pt-2">
                 <button
                     onClick={() => addNode(node.id, 'atomic')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-md transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
                 >
                     <Plus size={14} />
                     Add Timer
                 </button>
                 <button
                     onClick={() => addNode(node.id, 'loop')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors cursor-pointer"
                 >
                     <Plus size={14} />
                     Add Loop

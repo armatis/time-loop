@@ -20,6 +20,9 @@ interface TimerStore {
     workouts: Workout[];
     activeWorkoutId: string | null;
 
+    // Draft State (for new unsaved workouts)
+    draftWorkout: Workout | null;
+
     // Runner State
     runnerStatus: RunnerStatus;
     runnerQueue: PlayableEvent[];
@@ -36,6 +39,11 @@ interface TimerStore {
     deleteWorkout: (id: string) => void;
     setActiveWorkout: (id: string | null) => void;
     updateWorkoutName: (id: string, name: string) => void;
+
+    // Draft Actions
+    saveDraft: () => void;
+    discardDraft: () => void;
+    hasDraft: () => boolean;
 
     // Runner Actions
     startRunner: () => void;
@@ -95,6 +103,9 @@ export const useTimerStore = create<TimerStore>()(
             workouts: [],
             activeWorkoutId: null,
 
+            // Draft State
+            draftWorkout: null,
+
             // Runner State Defaults
             runnerStatus: 'idle',
             runnerQueue: [],
@@ -106,8 +117,9 @@ export const useTimerStore = create<TimerStore>()(
             soundPreset: 'default',
             themeMode: 'system',
 
-            createWorkout: (rootNode?: LoopNode, name?: string) => set((state) => {
-                const newWorkout: Workout = {
+            createWorkout: (rootNode?: LoopNode, name?: string) => set(() => {
+                // Create a draft instead of saving immediately
+                const newDraft: Workout = {
                     id: crypto.randomUUID(),
                     name: name || 'New Workout',
                     rootNode: rootNode || {
@@ -126,8 +138,8 @@ export const useTimerStore = create<TimerStore>()(
                     }
                 };
                 return {
-                    workouts: [...state.workouts, newWorkout],
-                    activeWorkoutId: newWorkout.id
+                    draftWorkout: newDraft,
+                    activeWorkoutId: newDraft.id
                 };
             }),
 
@@ -138,16 +150,44 @@ export const useTimerStore = create<TimerStore>()(
 
             setActiveWorkout: (id) => set({ activeWorkoutId: id }),
 
-            updateWorkoutName: (id, name) => set((state) => ({
-                workouts: state.workouts.map(w => w.id === id ? { ...w, name } : w)
+            updateWorkoutName: (id, name) => set((state) => {
+                // Check if updating draft
+                if (state.draftWorkout && state.draftWorkout.id === id) {
+                    return { draftWorkout: { ...state.draftWorkout, name } };
+                }
+                // Otherwise update saved workout
+                return { workouts: state.workouts.map(w => w.id === id ? { ...w, name } : w) };
+            }),
+
+            // Draft Actions
+            saveDraft: () => set((state) => {
+                if (!state.draftWorkout) return state;
+                return {
+                    workouts: [...state.workouts, state.draftWorkout],
+                    draftWorkout: null,
+                    // Keep activeWorkoutId pointing to the now-saved workout
+                };
+            }),
+
+            discardDraft: () => set(() => ({
+                draftWorkout: null,
+                activeWorkoutId: null,
             })),
+
+            hasDraft: () => {
+                const state = get();
+                return state.draftWorkout !== null;
+            },
 
             // Runner Actions
             startRunner: () => {
                 const state = get();
                 if (!state.activeWorkoutId) return;
 
-                const workout = state.workouts.find(w => w.id === state.activeWorkoutId);
+                // Check draft first, then saved workouts
+                let workout = state.draftWorkout && state.draftWorkout.id === state.activeWorkoutId
+                    ? state.draftWorkout
+                    : state.workouts.find(w => w.id === state.activeWorkoutId);
                 if (!workout) return;
 
                 const queue = flattenTree(workout.rootNode);
@@ -305,6 +345,30 @@ export const useTimerStore = create<TimerStore>()(
             addNode: (parentId, type) => set((state) => {
                 if (!state.activeWorkoutId) return state;
 
+                // Check if editing draft
+                const isDraft = state.draftWorkout && state.draftWorkout.id === state.activeWorkoutId;
+
+                if (isDraft) {
+                    const newDraft = structuredClone(state.draftWorkout!);
+                    const newRoot = newDraft.rootNode;
+
+                    let parent = parentId === 'root' ? newRoot : findNode(newRoot, parentId);
+                    if (!parent || parent.type === 'atomic') {
+                        parent = parentId === 'root' ? newRoot : (findNode(newRoot, parentId) as LoopNode);
+                    }
+
+                    if (parent && parent.type === 'loop') {
+                        const newNode: TimerNode | LoopNode = type === 'atomic'
+                            ? { id: crypto.randomUUID(), type: 'atomic', eventType: 'work', duration: 30, label: 'New Interval' }
+                            : { id: crypto.randomUUID(), type: 'loop', iterations: 2, children: [] };
+
+                        parent.children.push(newNode);
+                        return { draftWorkout: newDraft };
+                    }
+                    return state;
+                }
+
+                // Editing saved workout
                 const workoutIndex = state.workouts.findIndex(w => w.id === state.activeWorkoutId);
                 if (workoutIndex === -1) return state;
 
@@ -313,35 +377,17 @@ export const useTimerStore = create<TimerStore>()(
                 const newRoot = activeWorkout.rootNode;
 
                 let parent = parentId === 'root' ? newRoot : findNode(newRoot, parentId);
-
-                // If parent not found or is atomic (shouldn't happen), try finding actual parent
                 if (!parent || parent.type === 'atomic') {
-                    // Fallback: maybe parentId refers to the ID of the loop
                     parent = parentId === 'root' ? newRoot : (findNode(newRoot, parentId) as LoopNode);
                 }
 
                 if (parent && parent.type === 'loop') {
                     const newNode: TimerNode | LoopNode = type === 'atomic'
-                        ? {
-                            id: crypto.randomUUID(),
-                            type: 'atomic',
-                            eventType: 'work',
-                            duration: 30, // Default 30s
-                            label: 'New Interval'
-                        }
-                        : {
-                            id: crypto.randomUUID(),
-                            type: 'loop',
-                            iterations: 2,
-                            children: []
-                        };
+                        ? { id: crypto.randomUUID(), type: 'atomic', eventType: 'work', duration: 30, label: 'New Interval' }
+                        : { id: crypto.randomUUID(), type: 'loop', iterations: 2, children: [] };
 
                     parent.children.push(newNode);
-
-                    // Update the workout in the array
-                    activeWorkout.rootNode = newRoot;
                     newWorkouts[workoutIndex] = activeWorkout;
-
                     return { workouts: newWorkouts };
                 }
                 return state;
@@ -349,17 +395,30 @@ export const useTimerStore = create<TimerStore>()(
 
             updateNode: (id, data) => set((state) => {
                 if (!state.activeWorkoutId) return state;
+
+                // Check if editing draft
+                const isDraft = state.draftWorkout && state.draftWorkout.id === state.activeWorkoutId;
+
+                if (isDraft) {
+                    const newDraft = structuredClone(state.draftWorkout!);
+                    const node = findNode(newDraft.rootNode, id);
+                    if (node) {
+                        Object.assign(node, data);
+                        return { draftWorkout: newDraft };
+                    }
+                    return state;
+                }
+
+                // Editing saved workout
                 const workoutIndex = state.workouts.findIndex(w => w.id === state.activeWorkoutId);
                 if (workoutIndex === -1) return state;
 
                 const newWorkouts = [...state.workouts];
                 const activeWorkout = structuredClone(newWorkouts[workoutIndex]);
-                const newRoot = activeWorkout.rootNode;
-
-                const node = findNode(newRoot, id);
+                const node = findNode(activeWorkout.rootNode, id);
                 if (node) {
                     Object.assign(node, data);
-                    newWorkouts[workoutIndex] = activeWorkout; // Commit changes
+                    newWorkouts[workoutIndex] = activeWorkout;
                     return { workouts: newWorkouts };
                 }
                 return state;
@@ -367,17 +426,29 @@ export const useTimerStore = create<TimerStore>()(
 
             deleteNode: (id) => set((state) => {
                 if (!state.activeWorkoutId) return state;
+
+                // Check if editing draft
+                const isDraft = state.draftWorkout && state.draftWorkout.id === state.activeWorkoutId;
+
+                if (isDraft) {
+                    const newDraft = structuredClone(state.draftWorkout!);
+                    if (newDraft.rootNode.id === id) return state; // Cannot delete root
+                    const parent = findParent(newDraft.rootNode, id);
+                    if (parent) {
+                        parent.children = parent.children.filter(child => child.id !== id);
+                        return { draftWorkout: newDraft };
+                    }
+                    return state;
+                }
+
+                // Editing saved workout
                 const workoutIndex = state.workouts.findIndex(w => w.id === state.activeWorkoutId);
                 if (workoutIndex === -1) return state;
 
                 const newWorkouts = [...state.workouts];
                 const activeWorkout = structuredClone(newWorkouts[workoutIndex]);
-                const newRoot = activeWorkout.rootNode;
-
-                // Cannot delete root
-                if (newRoot.id === id) return state;
-
-                const parent = findParent(newRoot, id);
+                if (activeWorkout.rootNode.id === id) return state; // Cannot delete root
+                const parent = findParent(activeWorkout.rootNode, id);
                 if (parent) {
                     parent.children = parent.children.filter(child => child.id !== id);
                     newWorkouts[workoutIndex] = activeWorkout;
@@ -388,21 +459,38 @@ export const useTimerStore = create<TimerStore>()(
 
             moveNode: (activeId, overId) => set((state) => {
                 if (!state.activeWorkoutId) return state;
+
+                // Check if editing draft
+                const isDraft = state.draftWorkout && state.draftWorkout.id === state.activeWorkoutId;
+
+                if (isDraft) {
+                    const newDraft = structuredClone(state.draftWorkout!);
+                    const activeParent = findParent(newDraft.rootNode, activeId);
+                    const overParent = findParent(newDraft.rootNode, overId);
+
+                    if (activeParent && overParent && activeParent.id === overParent.id) {
+                        const activeIndex = activeParent.children.findIndex(c => c.id === activeId);
+                        const overIndex = activeParent.children.findIndex(c => c.id === overId);
+                        if (activeIndex !== -1 && overIndex !== -1) {
+                            activeParent.children = arrayMove(activeParent.children, activeIndex, overIndex);
+                            return { draftWorkout: newDraft };
+                        }
+                    }
+                    return state;
+                }
+
+                // Editing saved workout
                 const workoutIndex = state.workouts.findIndex(w => w.id === state.activeWorkoutId);
                 if (workoutIndex === -1) return state;
 
                 const newWorkouts = [...state.workouts];
                 const activeWorkout = structuredClone(newWorkouts[workoutIndex]);
-                const newRoot = activeWorkout.rootNode;
+                const activeParent = findParent(activeWorkout.rootNode, activeId);
+                const overParent = findParent(activeWorkout.rootNode, overId);
 
-                const activeParent = findParent(newRoot, activeId);
-                const overParent = findParent(newRoot, overId);
-
-                // Only allow move if parents match (siblings)
                 if (activeParent && overParent && activeParent.id === overParent.id) {
                     const activeIndex = activeParent.children.findIndex(c => c.id === activeId);
                     const overIndex = activeParent.children.findIndex(c => c.id === overId);
-
                     if (activeIndex !== -1 && overIndex !== -1) {
                         activeParent.children = arrayMove(activeParent.children, activeIndex, overIndex);
                         newWorkouts[workoutIndex] = activeWorkout;
@@ -415,6 +503,12 @@ export const useTimerStore = create<TimerStore>()(
             getNode: (id: string) => {
                 const state = get();
                 if (!state.activeWorkoutId) return null;
+
+                // Check draft first
+                if (state.draftWorkout && state.draftWorkout.id === state.activeWorkoutId) {
+                    return findNode(state.draftWorkout.rootNode, id);
+                }
+
                 const workout = state.workouts.find(w => w.id === state.activeWorkoutId);
                 if (!workout) return null;
                 return findNode(workout.rootNode, id);
@@ -424,6 +518,12 @@ export const useTimerStore = create<TimerStore>()(
             name: 'timer-storage',
             storage: createJSONStorage(() => localStorage),
             version: 1, // Invalidates old storage
+            partialize: (state) => ({
+                // Don't persist draft or runner state
+                workouts: state.workouts,
+                soundPreset: state.soundPreset,
+                themeMode: state.themeMode,
+            }),
         }
     )
 );

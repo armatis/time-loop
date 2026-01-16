@@ -38,7 +38,7 @@ export function TimerItem({ node }: TimerItemProps) {
 
             <button
                 onClick={() => deleteNode(node.id)}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors cursor-pointer"
                 title="Delete Timer"
             >
                 <Trash2 size={16} />
