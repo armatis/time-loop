@@ -7,8 +7,7 @@ import { LoopItem } from '@/components/LoopItem';
 import { TimerItem } from '@/components/TimerItem';
 import { Dashboard } from '@/components/Dashboard';
 import { RunnerOverlay } from '@/components/RunnerOverlay';
-import { LoopNode, PlayableEvent } from '@/types/timer';
-import { ArrowLeft, Edit2, Play } from 'lucide-react';
+import { ArrowLeft, Play, Clock } from 'lucide-react';
 import { AudioEngine } from '@/lib/audio';
 import {
   DndContext,
@@ -34,7 +33,6 @@ export default function Home() {
     tick
   } = useTimerStore();
 
-  const [flattenedEvents, setFlattenedEvents] = useState<PlayableEvent[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -45,6 +43,12 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Sync sound preset with AudioEngine
+  const soundPreset = useTimerStore((state) => state.soundPreset);
+  useEffect(() => {
+    AudioEngine.setPreset(soundPreset);
+  }, [soundPreset]);
 
   // RUNNER ENGINE
   useEffect(() => {
@@ -72,7 +76,9 @@ export default function Home() {
       }
     };
 
-    if (runnerStatus === 'running') {
+    const isActive = runnerStatus === 'running' || runnerStatus === 'countdown';
+
+    if (isActive) {
       // 1. Wake Lock
       requestWakeLock();
 
@@ -85,19 +91,31 @@ export default function Home() {
         const state = useTimerStore.getState();
         const { timeLeft, isMuted, runnerStatus: currentStatus } = state;
 
-        // Double-check we're still running (prevents race conditions)
-        if (currentStatus !== 'running') {
+        // Double-check we're still active (prevents race conditions)
+        if (currentStatus !== 'running' && currentStatus !== 'countdown') {
           return;
         }
 
         if (!isMuted) {
-          // Countdown beeps at 3, 2, 1 seconds remaining
-          if (timeLeft >= 1 && timeLeft <= 3) {
-            AudioEngine.playTick();
-          }
-          // Switch sound when transitioning to next event
-          if (timeLeft === 1) {
-            AudioEngine.playSwitch();
+          if (currentStatus === 'countdown') {
+            // "Get Ready" countdown sounds
+            if (timeLeft >= 1 && timeLeft <= 5) {
+              AudioEngine.playCountdown();
+            }
+            // "GO!" sound when countdown ends
+            if (timeLeft === 1) {
+              AudioEngine.playGo();
+            }
+          } else {
+            // Regular workout sounds
+            // Countdown beeps at 3, 2, 1 seconds remaining
+            if (timeLeft >= 1 && timeLeft <= 3) {
+              AudioEngine.playTick();
+            }
+            // Switch sound when transitioning to next event
+            if (timeLeft === 1) {
+              AudioEngine.playSwitch();
+            }
           }
         }
 
@@ -121,20 +139,14 @@ export default function Home() {
     })
   );
 
-  useEffect(() => {
-    // We no longer auto-init a mock tree here. 
-    // The Dashboard's "Create" button handles creating a fresh tree.
-    // If we have no workouts, the Dashboard shows the Empty State.
-  }, []);
-
-  useEffect(() => {
-    if (rootNode) {
-      const events = flattenTree(rootNode);
-      setFlattenedEvents(events);
-    } else {
-      setFlattenedEvents([]);
-    }
-  }, [rootNode]);
+  // Calculate total workout duration for display
+  const totalDuration = rootNode ? flattenTree(rootNode).reduce((sum, e) => sum + e.duration, 0) : 0;
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m === 0) return `${s}s`;
+    return s === 0 ? `${m}m` : `${m}m ${s}s`;
+  };
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
@@ -192,8 +204,9 @@ export default function Home() {
               onChange={(e) => activeWorkout && updateWorkoutName(activeWorkout.id, e.target.value)}
               className="text-2xl font-bold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-full transition-all px-2 py-1"
             />
-            <div className="text-xs text-gray-400 px-2 mt-1">
-              Recursive Timer Builder
+            <div className="text-xs text-gray-400 px-2 mt-1 flex items-center gap-2">
+              <Clock size={12} />
+              <span>Total: {formatDuration(totalDuration)}</span>
             </div>
           </div>
 
@@ -207,39 +220,30 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid gap-8">
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Workout Structure
-            </h2>
-          </div>
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            Workout Structure
+          </h2>
+        </div>
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <LoopItem node={rootNode} parentId="root" />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <LoopItem node={rootNode} parentId="root" />
 
-            <DragOverlay>
-              {activeId ? (
-                <div className="opacity-90 rotate-2 shadow-2xl cursor-grabbing">
-                  {renderOverlay()}
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        </section>
-
-        <section className="p-4 border rounded bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-          <h2 className="font-semibold mb-2">Flattened Events (Preview)</h2>
-          <pre className="text-xs bg-black text-green-400 p-4 rounded overflow-auto max-h-[300px]">
-            {JSON.stringify(flattenedEvents, null, 2)}
-          </pre>
-        </section>
-      </div>
+          <DragOverlay>
+            {activeId ? (
+              <div className="opacity-90 rotate-2 shadow-2xl cursor-grabbing">
+                {renderOverlay()}
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </section>
     </main>
   );
 }
