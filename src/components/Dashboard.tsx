@@ -2,7 +2,7 @@ import { useTimerStore, SoundPreset, ThemeMode } from '@/store/useTimerStore';
 import { Plus, Trash2, ChevronRight, Timer, Zap, X, Sun, Moon, Monitor, Volume2, Settings, Clock } from 'lucide-react';
 import { PRESETS } from '@/lib/presets';
 import { flattenTree } from '@/lib/flattenTree';
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 
 // Format duration helper
 const formatDuration = (seconds: number) => {
@@ -19,10 +19,10 @@ const SOUND_PRESETS: { id: SoundPreset; label: string; description: string }[] =
     { id: 'minimal', label: 'Minimal', description: 'Subtle, brief beeps' },
 ];
 
-const THEME_MODES: { id: ThemeMode; label: string; icon: typeof Sun }[] = [
-    { id: 'light', label: 'Light', icon: Sun },
-    { id: 'dark', label: 'Dark', icon: Moon },
-    { id: 'system', label: 'System', icon: Monitor },
+const THEME_MODES: { id: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [
+    { id: 'light', label: 'Light', icon: Sun, description: 'Always light mode' },
+    { id: 'dark', label: 'Dark', icon: Moon, description: 'Always dark mode' },
+    { id: 'system', label: 'Auto', icon: Monitor, description: 'Match your device settings' },
 ];
 
 export function Dashboard() {
@@ -38,37 +38,6 @@ export function Dashboard() {
     } = useTimerStore();
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [showSettings, setShowSettings] = useState(false);
-
-    // Apply theme to document
-    useEffect(() => {
-        const root = document.documentElement;
-
-        const applyTheme = (mode: ThemeMode) => {
-            if (mode === 'dark') {
-                root.classList.add('dark');
-            } else if (mode === 'light') {
-                root.classList.remove('dark');
-            } else {
-                // System preference
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (prefersDark) {
-                    root.classList.add('dark');
-                } else {
-                    root.classList.remove('dark');
-                }
-            }
-        };
-
-        applyTheme(themeMode);
-
-        // Listen for system theme changes when in 'system' mode
-        if (themeMode === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            const handler = () => applyTheme('system');
-            mediaQuery.addEventListener('change', handler);
-            return () => mediaQuery.removeEventListener('change', handler);
-        }
-    }, [themeMode]);
 
     return (
         <div className="max-w-6xl mx-auto py-12 px-4">
@@ -109,6 +78,7 @@ export function Dashboard() {
                                                     ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
                                                     : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                             }`}
+                                            title={mode.description}
                                         >
                                             <Icon size={16} />
                                             <span className="text-sm font-medium">{mode.label}</span>
