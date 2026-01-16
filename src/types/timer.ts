@@ -1,8 +1,10 @@
 export type TimerType = 'atomic' | 'loop';
+export type EventType = 'work' | 'rest';
 
 export interface TimerNode {
   id: string;
   type: 'atomic';
+  eventType: EventType;
   duration: number; // in seconds
   label: string;
 }
