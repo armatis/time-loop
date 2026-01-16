@@ -1,20 +1,149 @@
-import { useTimerStore } from '@/store/useTimerStore';
-import { Plus, Trash2, ChevronRight, Timer, Zap, X, Check } from 'lucide-react';
+import { useTimerStore, SoundPreset, ThemeMode } from '@/store/useTimerStore';
+import { Plus, Trash2, ChevronRight, Timer, Zap, X, Sun, Moon, Monitor, Volume2, Settings, Clock } from 'lucide-react';
 import { PRESETS } from '@/lib/presets';
-import { useState } from 'react';
+import { flattenTree } from '@/lib/flattenTree';
+import { useState, useEffect, useMemo } from 'react';
+
+// Format duration helper
+const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m === 0) return `${s}s`;
+    return s === 0 ? `${m}m` : `${m}m ${s}s`;
+};
+
+const SOUND_PRESETS: { id: SoundPreset; label: string; description: string }[] = [
+    { id: 'default', label: 'Default', description: 'Clear, balanced tones' },
+    { id: 'soft', label: 'Soft', description: 'Gentle, quieter sounds' },
+    { id: 'retro', label: 'Retro', description: 'Classic 8-bit style' },
+    { id: 'minimal', label: 'Minimal', description: 'Subtle, brief beeps' },
+];
+
+const THEME_MODES: { id: ThemeMode; label: string; icon: typeof Sun }[] = [
+    { id: 'light', label: 'Light', icon: Sun },
+    { id: 'dark', label: 'Dark', icon: Moon },
+    { id: 'system', label: 'System', icon: Monitor },
+];
 
 export function Dashboard() {
-    const { workouts, createWorkout, deleteWorkout, setActiveWorkout } = useTimerStore();
+    const {
+        workouts,
+        createWorkout,
+        deleteWorkout,
+        setActiveWorkout,
+        soundPreset,
+        setSoundPreset,
+        themeMode,
+        setThemeMode,
+    } = useTimerStore();
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [showSettings, setShowSettings] = useState(false);
+
+    // Apply theme to document
+    useEffect(() => {
+        const root = document.documentElement;
+
+        const applyTheme = (mode: ThemeMode) => {
+            if (mode === 'dark') {
+                root.classList.add('dark');
+            } else if (mode === 'light') {
+                root.classList.remove('dark');
+            } else {
+                // System preference
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    root.classList.add('dark');
+                } else {
+                    root.classList.remove('dark');
+                }
+            }
+        };
+
+        applyTheme(themeMode);
+
+        // Listen for system theme changes when in 'system' mode
+        if (themeMode === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handler = () => applyTheme('system');
+            mediaQuery.addEventListener('change', handler);
+            return () => mediaQuery.removeEventListener('change', handler);
+        }
+    }, [themeMode]);
 
     return (
         <div className="max-w-6xl mx-auto py-12 px-4">
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold flex items-center gap-3">
                     <Timer className="w-8 h-8" />
-                    My Workouts
+                    PowerLoop
                 </h1>
+
+                {/* Settings Toggle */}
+                <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    title="Settings"
+                >
+                    <Settings size={20} />
+                </button>
             </div>
+
+            {/* Settings Panel */}
+            {showSettings && (
+                <section className="mb-8 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl animate-in slide-in-from-top-2 fade-in duration-200">
+                    <div className="grid sm:grid-cols-2 gap-6">
+                        {/* Theme Selector */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                                Theme
+                            </h3>
+                            <div className="flex gap-2">
+                                {THEME_MODES.map((mode) => {
+                                    const Icon = mode.icon;
+                                    return (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => setThemeMode(mode.id)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                                                themeMode === mode.id
+                                                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                            }`}
+                                        >
+                                            <Icon size={16} />
+                                            <span className="text-sm font-medium">{mode.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Sound Selector */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <Volume2 size={14} />
+                                Sound
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {SOUND_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset.id}
+                                        onClick={() => setSoundPreset(preset.id)}
+                                        className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                                            soundPreset === preset.id
+                                                ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                        }`}
+                                        title={preset.description}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Quick Start Section */}
             <section className="mb-12">
@@ -56,7 +185,10 @@ export function Dashboard() {
                     </button>
 
                     {/* Workout Cards */}
-                    {workouts.map((workout) => (
+                    {workouts.map((workout) => {
+                        const duration = flattenTree(workout.rootNode).reduce((sum, e) => sum + e.duration, 0);
+                        const intervalCount = flattenTree(workout.rootNode).length;
+                        return (
                         <div
                             key={workout.id}
                             className="group relative p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[160px]"
@@ -66,14 +198,18 @@ export function Dashboard() {
                                 <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     {workout.name}
                                 </h3>
-                                <p className="text-sm text-gray-500">
-                                    {workout.rootNode.children.length} items
-                                </p>
+                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                        <Clock size={14} />
+                                        {formatDuration(duration)}
+                                    </span>
+                                    <span>{intervalCount} intervals</span>
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between mt-4">
-                                <div className="text-xs text-gray-400 font-mono">
-                                    ID: {workout.id.slice(0, 4)}...
+                                <div className="text-xs text-gray-400">
+                                    {workout.rootNode.children.length} top-level items
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {deletingId === workout.id ? (
@@ -118,7 +254,8 @@ export function Dashboard() {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {workouts.length === 0 && (
