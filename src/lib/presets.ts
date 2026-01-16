@@ -22,12 +22,14 @@ export const PRESETS: WorkoutPreset[] = [
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'work',
                     duration: 20,
                     label: 'Work'
                 },
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'rest',
                     duration: 10,
                     label: 'Rest'
                 }
@@ -47,12 +49,14 @@ export const PRESETS: WorkoutPreset[] = [
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'work',
                     duration: 1500, // 25 minutes
                     label: 'Focus'
                 },
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'rest',
                     duration: 300, // 5 minutes
                     label: 'Break'
                 }
@@ -72,12 +76,14 @@ export const PRESETS: WorkoutPreset[] = [
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'work',
                     duration: 50,
                     label: 'Work'
                 },
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'rest',
                     duration: 10,
                     label: 'Transition'
                 }
@@ -97,12 +103,14 @@ export const PRESETS: WorkoutPreset[] = [
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'work',
                     duration: 30,
                     label: 'Work'
                 },
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'rest',
                     duration: 30,
                     label: 'Rest'
                 }
@@ -122,12 +130,14 @@ export const PRESETS: WorkoutPreset[] = [
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'work',
                     duration: 30,
                     label: 'Stretch'
                 },
                 {
                     id: crypto.randomUUID(),
                     type: 'atomic',
+                    eventType: 'rest',
                     duration: 5,
                     label: 'Transition'
                 }
