@@ -10,7 +10,11 @@ export interface Workout {
     rootNode: LoopNode;
 }
 
-export type RunnerStatus = 'idle' | 'running' | 'paused' | 'completed';
+export type RunnerStatus = 'idle' | 'countdown' | 'running' | 'paused' | 'completed';
+export type SoundPreset = 'default' | 'soft' | 'retro' | 'minimal';
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+export const COUNTDOWN_DURATION = 5; // seconds
 
 interface TimerStore {
     workouts: Workout[];
@@ -22,6 +26,10 @@ interface TimerStore {
     runnerIndex: number;
     timeLeft: number;
     isMuted: boolean;
+
+    // Settings
+    soundPreset: SoundPreset;
+    themeMode: ThemeMode;
 
     // Workout Actions
     createWorkout: (rootNode?: LoopNode, name?: string) => void;
@@ -35,6 +43,16 @@ interface TimerStore {
     togglePause: () => void;
     exitRunner: () => void;
     toggleMute: () => void;
+    skipToNext: () => void;
+    skipToPrevious: () => void;
+
+    // Settings Actions
+    setSoundPreset: (preset: SoundPreset) => void;
+    setThemeMode: (mode: ThemeMode) => void;
+
+    // Computed Helpers
+    getTotalDuration: () => number;
+    getElapsedDuration: () => number;
 
     // Node Actions (operate on active Active Workout)
     addNode: (parentId: string, type: 'atomic' | 'loop') => void;
@@ -84,6 +102,10 @@ export const useTimerStore = create<TimerStore>()(
             timeLeft: 0,
             isMuted: false,
 
+            // Settings Defaults
+            soundPreset: 'default',
+            themeMode: 'system',
+
             createWorkout: (rootNode?: LoopNode, name?: string) => set((state) => {
                 const newWorkout: Workout = {
                     id: crypto.randomUUID(),
@@ -131,16 +153,33 @@ export const useTimerStore = create<TimerStore>()(
                 const queue = flattenTree(workout.rootNode);
                 if (queue.length === 0) return;
 
+                // Start with countdown
                 set({
                     runnerQueue: queue,
                     runnerIndex: 0,
-                    timeLeft: queue[0].duration,
-                    runnerStatus: 'running'
+                    timeLeft: COUNTDOWN_DURATION,
+                    runnerStatus: 'countdown'
                 });
             },
 
             tick: () => {
                 const state = get();
+
+                // Handle countdown phase
+                if (state.runnerStatus === 'countdown') {
+                    const newTimeLeft = state.timeLeft - 1;
+                    if (newTimeLeft > 0) {
+                        set({ timeLeft: newTimeLeft });
+                    } else {
+                        // Countdown finished, start actual workout
+                        set({
+                            runnerStatus: 'running',
+                            timeLeft: state.runnerQueue[0].duration
+                        });
+                    }
+                    return;
+                }
+
                 if (state.runnerStatus !== 'running') return;
 
                 const newTimeLeft = state.timeLeft - 1;
@@ -162,13 +201,106 @@ export const useTimerStore = create<TimerStore>()(
                 }
             },
 
-            togglePause: () => set((state) => ({
-                runnerStatus: state.runnerStatus === 'running' ? 'paused' : (state.runnerStatus === 'paused' ? 'running' : state.runnerStatus)
-            })),
+            togglePause: () => set((state) => {
+                // Can pause during countdown or running
+                if (state.runnerStatus === 'running' || state.runnerStatus === 'countdown') {
+                    return { runnerStatus: 'paused' };
+                }
+                if (state.runnerStatus === 'paused') {
+                    // Resume to running (countdown would have been interrupted)
+                    return { runnerStatus: 'running' };
+                }
+                return {};
+            }),
 
             exitRunner: () => set({ runnerStatus: 'idle', runnerQueue: [], runnerIndex: 0, timeLeft: 0 }),
 
             toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
+
+            skipToNext: () => {
+                const state = get();
+                if (state.runnerStatus === 'idle' || state.runnerStatus === 'completed') return;
+
+                // If in countdown, skip to first interval
+                if (state.runnerStatus === 'countdown') {
+                    set({
+                        runnerStatus: 'running',
+                        timeLeft: state.runnerQueue[0].duration
+                    });
+                    return;
+                }
+
+                const nextIndex = state.runnerIndex + 1;
+                if (nextIndex >= state.runnerQueue.length) {
+                    set({ runnerStatus: 'completed', timeLeft: 0 });
+                } else {
+                    set({
+                        runnerIndex: nextIndex,
+                        timeLeft: state.runnerQueue[nextIndex].duration
+                    });
+                }
+            },
+
+            skipToPrevious: () => {
+                const state = get();
+                if (state.runnerStatus === 'idle' || state.runnerStatus === 'completed') return;
+
+                // If in countdown, just restart countdown
+                if (state.runnerStatus === 'countdown') {
+                    set({ timeLeft: COUNTDOWN_DURATION });
+                    return;
+                }
+
+                // If more than 3 seconds into current interval, restart it
+                const currentEvent = state.runnerQueue[state.runnerIndex];
+                if (currentEvent && (currentEvent.duration - state.timeLeft) > 3) {
+                    set({ timeLeft: currentEvent.duration });
+                    return;
+                }
+
+                // Otherwise go to previous interval
+                const prevIndex = state.runnerIndex - 1;
+                if (prevIndex < 0) {
+                    // Go back to countdown
+                    set({
+                        runnerStatus: 'countdown',
+                        runnerIndex: 0,
+                        timeLeft: COUNTDOWN_DURATION
+                    });
+                } else {
+                    set({
+                        runnerIndex: prevIndex,
+                        timeLeft: state.runnerQueue[prevIndex].duration
+                    });
+                }
+            },
+
+            // Settings Actions
+            setSoundPreset: (preset) => set({ soundPreset: preset }),
+            setThemeMode: (mode) => set({ themeMode: mode }),
+
+            // Computed Helpers
+            getTotalDuration: () => {
+                const state = get();
+                return state.runnerQueue.reduce((sum, event) => sum + event.duration, 0);
+            },
+
+            getElapsedDuration: () => {
+                const state = get();
+                if (state.runnerStatus === 'idle') return 0;
+                if (state.runnerStatus === 'countdown') return 0;
+
+                // Sum of all completed intervals + time spent in current interval
+                let elapsed = 0;
+                for (let i = 0; i < state.runnerIndex; i++) {
+                    elapsed += state.runnerQueue[i].duration;
+                }
+                // Add elapsed time in current interval
+                if (state.runnerQueue[state.runnerIndex]) {
+                    elapsed += state.runnerQueue[state.runnerIndex].duration - state.timeLeft;
+                }
+                return elapsed;
+            },
 
             addNode: (parentId, type) => set((state) => {
                 if (!state.activeWorkoutId) return state;
