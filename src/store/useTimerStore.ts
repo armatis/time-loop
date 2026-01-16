@@ -96,6 +96,7 @@ export const useTimerStore = create<TimerStore>()(
                             {
                                 id: crypto.randomUUID(),
                                 type: 'atomic',
+                                eventType: 'work',
                                 duration: 30,
                                 label: 'Work'
                             }
@@ -192,6 +193,7 @@ export const useTimerStore = create<TimerStore>()(
                         ? {
                             id: crypto.randomUUID(),
                             type: 'atomic',
+                            eventType: 'work',
                             duration: 30, // Default 30s
                             label: 'New Interval'
                         }

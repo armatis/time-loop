@@ -5,7 +5,7 @@ export function flattenTree(node: LoopNode | TimerNode): PlayableEvent[] {
         return [{
             duration: node.duration,
             label: node.label,
-            type: node.label.toLowerCase().includes('rest') ? 'rest' : 'work'
+            type: node.eventType
         }];
     }
 
