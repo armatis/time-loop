@@ -5,13 +5,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useCallback } from 'react';
 import { clsx } from 'clsx';
-
-// Helper to format SS to MM:SS
-const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-};
+import { formatTime } from '@/lib/format';
+import { AudioEngine } from '@/lib/audio';
+import { getRunnerSound } from '@/lib/getRunnerSound';
 
 export function RunnerOverlay() {
     const {
@@ -28,6 +24,7 @@ export function RunnerOverlay() {
         skipToPrevious,
         getTotalDuration,
         getElapsedDuration,
+        tick,
     } = useTimerStore();
 
     // Keyboard shortcuts
@@ -60,6 +57,83 @@ export function RunnerOverlay() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
+
+    // RUNNER ENGINE: interval tick, wake lock, and audio
+    useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+        let wakeLock: WakeLockSentinel | null = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.warn('Wake Lock error:', err);
+            }
+        };
+
+        const releaseWakeLock = async () => {
+            if (wakeLock) {
+                try {
+                    await wakeLock.release();
+                    wakeLock = null;
+                } catch (err) {
+                    console.warn('Wake Lock release error:', err);
+                }
+            }
+        };
+
+        const isActive = runnerStatus === 'running' || runnerStatus === 'countdown';
+
+        if (isActive) {
+            // 1. Wake Lock
+            requestWakeLock();
+
+            // 2. Audio Context Init (User Gesture Proxy)
+            AudioEngine.init();
+
+            // 3. Tick Loop
+            interval = setInterval(() => {
+                // Check state directly to avoid stale closures
+                const state = useTimerStore.getState();
+                const { timeLeft: currentTimeLeft, isMuted: currentMuted, runnerStatus: currentStatus } = state;
+
+                // Double-check we're still active (prevents race conditions)
+                if (currentStatus !== 'running' && currentStatus !== 'countdown') {
+                    return;
+                }
+
+                // Play sound based on status and time
+                if (!currentMuted) {
+                    const sound = getRunnerSound(currentStatus, currentTimeLeft);
+                    switch (sound) {
+                        case 'countdown':
+                            AudioEngine.playCountdown();
+                            break;
+                        case 'go':
+                            AudioEngine.playGo();
+                            break;
+                        case 'tick':
+                            AudioEngine.playTick();
+                            break;
+                        case 'switch':
+                            AudioEngine.playSwitch();
+                            break;
+                    }
+                }
+
+                tick();
+            }, 1000);
+        }
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+            releaseWakeLock();
+        };
+    }, [runnerStatus, tick]);
 
     if (runnerStatus === 'idle') return null;
 

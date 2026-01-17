@@ -1,29 +1,10 @@
-import { useTimerStore, SoundPreset, ThemeMode } from '@/store/useTimerStore';
-import { Plus, Trash2, ChevronRight, Timer, Zap, X, Sun, Moon, Monitor, Volume2, Settings, Clock } from 'lucide-react';
+import { useTimerStore } from '@/store/useTimerStore';
+import { Plus, Trash2, ChevronRight, Timer, Zap, X, Volume2, Settings, Clock } from 'lucide-react';
 import { PRESETS } from '@/lib/presets';
 import { flattenTree } from '@/lib/flattenTree';
+import { formatDuration } from '@/lib/format';
 import { useState } from 'react';
-
-// Format duration helper
-const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    if (m === 0) return `${s}s`;
-    return s === 0 ? `${m}m` : `${m}m ${s}s`;
-};
-
-const SOUND_PRESETS: { id: SoundPreset; label: string; description: string }[] = [
-    { id: 'default', label: 'Default', description: 'Clear, balanced tones' },
-    { id: 'soft', label: 'Soft', description: 'Gentle, quieter sounds' },
-    { id: 'retro', label: 'Retro', description: 'Classic 8-bit style' },
-    { id: 'minimal', label: 'Minimal', description: 'Subtle, brief beeps' },
-];
-
-const THEME_MODES: { id: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [
-    { id: 'light', label: 'Light', icon: Sun, description: 'Always light mode' },
-    { id: 'dark', label: 'Dark', icon: Moon, description: 'Always dark mode' },
-    { id: 'system', label: 'Auto', icon: Monitor, description: 'Match your device settings' },
-];
+import { SOUND_PRESETS, THEME_MODES } from './constants';
 
 export function Dashboard() {
     const {
@@ -73,11 +54,10 @@ export function Dashboard() {
                                         <button
                                             key={mode.id}
                                             onClick={() => setThemeMode(mode.id)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all cursor-pointer ${
-                                                themeMode === mode.id
-                                                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
-                                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                            }`}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all cursor-pointer ${themeMode === mode.id
+                                                ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                                }`}
                                             title={mode.description}
                                         >
                                             <Icon size={16} />
@@ -99,11 +79,10 @@ export function Dashboard() {
                                     <button
                                         key={preset.id}
                                         onClick={() => setSoundPreset(preset.id)}
-                                        className={`px-3 py-1.5 rounded-lg border text-sm transition-all cursor-pointer ${
-                                            soundPreset === preset.id
-                                                ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg border text-sm transition-all cursor-pointer ${soundPreset === preset.id
+                                            ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                            }`}
                                         title={preset.description}
                                     >
                                         {preset.label}
@@ -159,71 +138,71 @@ export function Dashboard() {
                         const duration = flattenTree(workout.rootNode).reduce((sum, e) => sum + e.duration, 0);
                         const intervalCount = flattenTree(workout.rootNode).length;
                         return (
-                        <div
-                            key={workout.id}
-                            className="group relative p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[160px]"
-                            onClick={() => setActiveWorkout(workout.id)}
-                        >
-                            <div>
-                                <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    {workout.name}
-                                </h3>
-                                <div className="flex items-center gap-3 text-sm text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                        <Clock size={14} />
-                                        {formatDuration(duration)}
-                                    </span>
-                                    <span>{intervalCount} intervals</span>
+                            <div
+                                key={workout.id}
+                                className="group relative p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[160px]"
+                                onClick={() => setActiveWorkout(workout.id)}
+                            >
+                                <div>
+                                    <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {workout.name}
+                                    </h3>
+                                    <div className="flex items-center gap-3 text-sm text-gray-500">
+                                        <span className="flex items-center gap-1">
+                                            <Clock size={14} />
+                                            {formatDuration(duration)}
+                                        </span>
+                                        <span>{intervalCount} intervals</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-center justify-between mt-4">
-                                <div className="text-xs text-gray-400">
-                                    {workout.rootNode.children.length} top-level items
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {deletingId === workout.id ? (
-                                        <div className="flex items-center gap-1 animate-in slide-in-from-right-2 fade-in duration-200">
+                                <div className="flex items-center justify-between mt-4">
+                                    <div className="text-xs text-gray-400">
+                                        {workout.rootNode.children.length} top-level items
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {deletingId === workout.id ? (
+                                            <div className="flex items-center gap-1 animate-in slide-in-from-right-2 fade-in duration-200">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteWorkout(workout.id);
+                                                        setDeletingId(null);
+                                                    }}
+                                                    className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors font-bold text-xs cursor-pointer"
+                                                    title="Confirm Delete"
+                                                >
+                                                    Confirm
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeletingId(null);
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                                    title="Cancel"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ) : (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    deleteWorkout(workout.id);
-                                                    setDeletingId(null);
+                                                    setDeletingId(workout.id);
                                                 }}
-                                                className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors font-bold text-xs cursor-pointer"
-                                                title="Confirm Delete"
+                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                                                title="Delete Workout"
                                             >
-                                                Confirm
+                                                <Trash2 size={16} />
                                             </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDeletingId(null);
-                                                }}
-                                                className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                                                title="Cancel"
-                                            >
-                                                <X size={16} />
-                                            </button>
+                                        )}
+                                        <div className="p-2 text-gray-300 group-hover:text-blue-500 transition-colors">
+                                            <ChevronRight size={20} />
                                         </div>
-                                    ) : (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeletingId(workout.id);
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                                            title="Delete Workout"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                    <div className="p-2 text-gray-300 group-hover:text-blue-500 transition-colors">
-                                        <ChevronRight size={20} />
                                     </div>
                                 </div>
                             </div>
-                        </div>
                         );
                     })}
                 </div>
