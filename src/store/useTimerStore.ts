@@ -521,12 +521,27 @@ export const createTimerStore = () => create<TimerStore>()(
             storage: createJSONStorage(() => localStorage),
             version: 1, // Invalidates old storage
             partialize: (state) => ({
-                // Don't persist draft or runner state
                 workouts: state.workouts,
                 activeWorkoutId: state.activeWorkoutId,
+                draftWorkout: state.draftWorkout,
                 soundPreset: state.soundPreset,
                 themeMode: state.themeMode,
+                runnerStatus: state.runnerStatus,
+                runnerQueue: state.runnerQueue,
+                runnerIndex: state.runnerIndex,
+                timeLeft: state.timeLeft,
             }),
+            onRehydrateStorage: () => (state) => {
+                if (!state) return;
+                // Restart countdown from beginning
+                if (state.runnerStatus === 'countdown') {
+                    state.timeLeft = COUNTDOWN_DURATION;
+                }
+                // Auto-pause if timer was running
+                if (state.runnerStatus === 'running') {
+                    state.runnerStatus = 'paused';
+                }
+            },
         }
     )
 );
