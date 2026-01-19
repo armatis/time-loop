@@ -35,7 +35,7 @@ export default function Home() {
 
   // VIEW: EDITOR
   return (
-    <main className="min-h-screen p-8 font-[family-name:var(--font-geist-sans)] max-w-3xl mx-auto">
+    <main className="min-h-screen p-4 sm:p-8 font-[family-name:var(--font-geist-sans)] max-w-3xl mx-auto">
       <RunnerOverlay />
       <WorkoutEditor />
     </main>

@@ -190,17 +190,17 @@ export function RunnerOverlay() {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={toggleMute}
-                        className="p-3 bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer"
+                        className="p-3 min-h-[48px] min-w-[48px] flex items-center justify-center bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer active:scale-95"
                         title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
                     >
-                        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                        {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
                     </button>
                     <button
                         onClick={exitRunner}
-                        className="p-3 bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer"
+                        className="p-3 min-h-[48px] min-w-[48px] flex items-center justify-center bg-black/20 hover:bg-black/40 rounded-full transition-colors cursor-pointer active:scale-95"
                         title="Exit (Esc)"
                     >
-                        <X size={20} />
+                        <X size={22} />
                     </button>
                 </div>
             </div>
@@ -270,7 +270,7 @@ export function RunnerOverlay() {
                             {/* Previous */}
                             <button
                                 onClick={skipToPrevious}
-                                className="p-4 sm:p-5 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                                className="p-4 sm:p-5 min-h-[56px] min-w-[56px] flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
                                 title="Previous (Left Arrow)"
                             >
                                 <SkipBack size={28} className="fill-current" />
@@ -279,7 +279,7 @@ export function RunnerOverlay() {
                             {/* Play/Pause */}
                             <button
                                 onClick={togglePause}
-                                className="p-6 sm:p-8 bg-white text-slate-900 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                className="p-6 sm:p-8 min-h-[80px] min-w-[80px] flex items-center justify-center bg-white text-slate-900 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                 title={isPaused ? 'Play (Space)' : 'Pause (Space)'}
                             >
                                 {isPaused ? (
@@ -292,7 +292,7 @@ export function RunnerOverlay() {
                             {/* Next */}
                             <button
                                 onClick={skipToNext}
-                                className="p-4 sm:p-5 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                                className="p-4 sm:p-5 min-h-[56px] min-w-[56px] flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer"
                                 title="Next (Right Arrow)"
                             >
                                 <SkipForward size={28} className="fill-current" />

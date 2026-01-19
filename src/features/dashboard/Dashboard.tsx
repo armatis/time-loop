@@ -21,20 +21,20 @@ export function Dashboard() {
     const [showSettings, setShowSettings] = useState(false);
 
     return (
-        <div className="max-w-6xl mx-auto py-12 px-4">
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold flex items-center gap-3">
-                    <Timer className="w-8 h-8" />
+        <div className="max-w-6xl mx-auto py-6 sm:py-12 px-3 sm:px-4">
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3">
+                    <Timer className="w-7 h-7 sm:w-8 sm:h-8" />
                     PowerLoop
                 </h1>
 
                 {/* Settings Toggle */}
                 <button
                     onClick={() => setShowSettings(!showSettings)}
-                    className={`p-2 rounded-lg transition-colors cursor-pointer ${showSettings ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    className={`p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer active:scale-95 ${showSettings ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                     title="Settings"
                 >
-                    <Settings size={20} />
+                    <Settings size={22} />
                 </button>
             </div>
 
@@ -47,20 +47,20 @@ export function Dashboard() {
                             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                                 Theme
                             </h3>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                                 {THEME_MODES.map((mode) => {
                                     const Icon = mode.icon;
                                     return (
                                         <button
                                             key={mode.id}
                                             onClick={() => setThemeMode(mode.id)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all cursor-pointer ${themeMode === mode.id
+                                            className={`flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-lg border transition-all cursor-pointer active:scale-95 ${themeMode === mode.id
                                                 ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
                                                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                                 }`}
                                             title={mode.description}
                                         >
-                                            <Icon size={16} />
+                                            <Icon size={18} />
                                             <span className="text-sm font-medium">{mode.label}</span>
                                         </button>
                                     );
@@ -79,7 +79,7 @@ export function Dashboard() {
                                     <button
                                         key={preset.id}
                                         onClick={() => setSoundPreset(preset.id)}
-                                        className={`px-3 py-1.5 rounded-lg border text-sm transition-all cursor-pointer ${soundPreset === preset.id
+                                        className={`px-4 py-3 min-h-[44px] rounded-lg border text-sm transition-all cursor-pointer active:scale-95 ${soundPreset === preset.id
                                             ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
                                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                             }`}
@@ -169,7 +169,7 @@ export function Dashboard() {
                                                         deleteWorkout(workout.id);
                                                         setDeletingId(null);
                                                     }}
-                                                    className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors font-bold text-xs cursor-pointer"
+                                                    className="px-3 py-2 min-h-[44px] bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors font-bold text-sm cursor-pointer active:scale-95"
                                                     title="Confirm Delete"
                                                 >
                                                     Confirm
@@ -179,10 +179,10 @@ export function Dashboard() {
                                                         e.stopPropagation();
                                                         setDeletingId(null);
                                                     }}
-                                                    className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                                    className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer active:scale-95"
                                                     title="Cancel"
                                                 >
-                                                    <X size={16} />
+                                                    <X size={18} />
                                                 </button>
                                             </div>
                                         ) : (
@@ -191,10 +191,10 @@ export function Dashboard() {
                                                     e.stopPropagation();
                                                     setDeletingId(workout.id);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                                                className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer active:scale-95"
                                                 title="Delete Workout"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={18} />
                                             </button>
                                         )}
                                         <div className="p-2 text-gray-300 group-hover:text-blue-500 transition-colors">
