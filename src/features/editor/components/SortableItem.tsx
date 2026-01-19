@@ -48,10 +48,10 @@ export function DragHandle() {
         <button
             {...attributes}
             {...listeners}
-            className="cursor-grab text-gray-400 hover:text-gray-600 p-2 touch-none active:cursor-grabbing"
+            className="cursor-grab text-gray-400 hover:text-gray-600 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center touch-none active:cursor-grabbing"
             aria-label="Drag to reorder"
         >
-            <GripVertical size={20} />
+            <GripVertical size={22} />
         </button>
     );
 }
