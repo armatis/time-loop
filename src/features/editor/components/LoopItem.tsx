@@ -1,6 +1,6 @@
 import { LoopNode } from "@/types/timer";
 import { TimerItem } from "./TimerItem";
-import { Plus, Repeat, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Repeat, Trash2 } from "lucide-react";
 import { useTimerStore } from "@/store/useTimerStore";
 import { useState } from "react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -14,12 +14,23 @@ interface LoopItemProps {
 export function LoopItem({ node, parentId }: LoopItemProps) {
     const { addNode, updateNode, deleteNode } = useTimerStore();
     const [isFocused, setIsFocused] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const canCollapse = parentId !== 'root';
 
     return (
         <div className="border-2 border-blue-500/20 rounded-xl p-4 space-y-4 bg-white dark:bg-zinc-900/50">
             {/* Header */}
             <div className="flex items-center gap-3 sm:gap-4 pb-2 border-b border-gray-100 dark:border-zinc-800">
                 {parentId !== 'root' && <DragHandle />}
+
+                {canCollapse && (
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    >
+                        {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
+                )}
 
                 <div className="p-2 sm:p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
                     <Repeat size={20} />
@@ -61,41 +72,49 @@ export function LoopItem({ node, parentId }: LoopItemProps) {
                 )}
             </div>
 
-            {/* Children */}
-            <div className="space-y-3 pl-3 sm:pl-4 pr-1 border-l-2 border-gray-100 dark:border-zinc-800">
-                <SortableContext
-                    items={node.children.map(c => c.id)}
-                    strategy={verticalListSortingStrategy}
-                >
-                    {node.children.map((child) => (
-                        <SortableItem key={child.id} id={child.id}>
-                            {child.type === 'atomic' ? (
-                                <TimerItem node={child} parentId={node.id} />
-                            ) : (
-                                <LoopItem node={child} parentId={node.id} />
-                            )}
-                        </SortableItem>
-                    ))}
-                </SortableContext>
-            </div>
+            {isExpanded ? (
+                <>
+                    {/* Children */}
+                    <div className="space-y-3 pl-3 sm:pl-4 pr-1 border-l-2 border-gray-100 dark:border-zinc-800">
+                        <SortableContext
+                            items={node.children.map(c => c.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {node.children.map((child) => (
+                                <SortableItem key={child.id} id={child.id}>
+                                    {child.type === 'atomic' ? (
+                                        <TimerItem node={child} parentId={node.id} />
+                                    ) : (
+                                        <LoopItem node={child} parentId={node.id} />
+                                    )}
+                                </SortableItem>
+                            ))}
+                        </SortableContext>
+                    </div>
 
-            {/* Footer / Actions */}
-            <div className="flex gap-2 pt-2">
-                <button
-                    onClick={() => addNode(node.id, 'atomic')}
-                    className="flex items-center gap-2 px-4 py-3 min-h-[44px] text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer active:scale-95"
-                >
-                    <Plus size={16} />
-                    Add Timer
-                </button>
-                <button
-                    onClick={() => addNode(node.id, 'loop')}
-                    className="flex items-center gap-2 px-4 py-3 min-h-[44px] text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors cursor-pointer active:scale-95"
-                >
-                    <Plus size={16} />
-                    Add Loop
-                </button>
-            </div>
+                    {/* Footer / Actions */}
+                    <div className="flex gap-2 pt-2">
+                        <button
+                            onClick={() => addNode(node.id, 'atomic')}
+                            className="flex items-center gap-2 px-4 py-3 min-h-[44px] text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer active:scale-95"
+                        >
+                            <Plus size={16} />
+                            Add Timer
+                        </button>
+                        <button
+                            onClick={() => addNode(node.id, 'loop')}
+                            className="flex items-center gap-2 px-4 py-3 min-h-[44px] text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors cursor-pointer active:scale-95"
+                        >
+                            <Plus size={16} />
+                            Add Loop
+                        </button>
+                    </div>
+                </>
+            ) : (
+                <div className="text-sm text-gray-500 dark:text-gray-400 pl-4 py-2">
+                    {node.children.length} item{node.children.length !== 1 ? 's' : ''}
+                </div>
+            )}
         </div>
     );
 }
