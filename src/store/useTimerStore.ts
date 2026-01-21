@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { LoopNode, TimerNode, PlayableEvent } from '@/types/timer';
 import { arrayMove } from '@dnd-kit/sortable';
 import { flattenTree } from '@/lib/flattenTree';
+import { generateUniqueName } from '@/lib/workoutValidation';
 
 export interface Workout {
     id: string;
@@ -115,11 +116,12 @@ const storeCreator: StateCreator<TimerStore> = (set, get) => ({
     soundPreset: 'default',
     themeMode: 'system',
 
-    createWorkout: (rootNode?: LoopNode, name?: string) => set(() => {
+    createWorkout: (rootNode?: LoopNode, name?: string) => set((state) => {
         // Create a draft instead of saving immediately
+        const uniqueName = name || generateUniqueName(state.workouts, state.draftWorkout);
         const newDraft: Workout = {
             id: crypto.randomUUID(),
-            name: name || 'New Workout',
+            name: uniqueName,
             rootNode: rootNode || {
                 id: crypto.randomUUID(),
                 type: 'loop',
