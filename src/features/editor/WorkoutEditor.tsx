@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTimerStore } from '@/store/useTimerStore';
 import { flattenTree } from '@/lib/flattenTree';
 import { formatDuration } from '@/lib/format';
+import { isNameUnique, isValidName } from '@/lib/workoutValidation';
 import { ArrowLeft, Play, Clock, Save, X } from 'lucide-react';
 import { EditorDndProvider } from './context/EditorDndContext';
 import { LoopItem } from './components/LoopItem';
@@ -22,6 +23,7 @@ export function WorkoutEditor() {
     } = useTimerStore();
 
     const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+    const [nameError, setNameError] = useState<string | null>(null);
 
     // Computed from store - check draft first, then saved workouts
     const isDraft = draftWorkout && draftWorkout.id === activeWorkoutId;
@@ -30,6 +32,31 @@ export function WorkoutEditor() {
 
     // Calculate total workout duration for display
     const totalDuration = rootNode ? flattenTree(rootNode).reduce((sum, e) => sum + e.duration, 0) : 0;
+
+    // Name validation
+    const handleNameBlur = () => {
+        if (!activeWorkout) return;
+        const name = activeWorkout.name;
+
+        if (!isValidName(name)) {
+            setNameError('Name cannot be empty');
+            return;
+        }
+
+        if (!isNameUnique(name, workouts, draftWorkout, activeWorkout.id)) {
+            setNameError('A workout with this name already exists');
+            return;
+        }
+
+        setNameError(null);
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (nameError) setNameError(null);
+        activeWorkout && updateWorkoutName(activeWorkout.id, e.target.value);
+    };
+
+    const canSave = !nameError && isValidName(activeWorkout?.name || '');
 
     // Handle back navigation - show confirm if draft
     const handleBack = () => {
@@ -84,8 +111,13 @@ export function WorkoutEditor() {
                             <input
                                 type="text"
                                 value={activeWorkout?.name || 'Workout'}
-                                onChange={(e) => activeWorkout && updateWorkoutName(activeWorkout.id, e.target.value)}
-                                className="text-xl sm:text-2xl font-bold bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-full transition-all px-1 py-1 min-h-[44px]"
+                                onChange={handleNameChange}
+                                onBlur={handleNameBlur}
+                                className={`text-xl sm:text-2xl font-bold bg-transparent border-b ${
+                                    nameError
+                                        ? 'border-red-500'
+                                        : 'border-transparent hover:border-gray-300 focus:border-blue-500'
+                                } focus:outline-none w-full transition-all px-1 py-1 min-h-[44px]`}
                             />
                             {isDraft && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded whitespace-nowrap">
@@ -93,6 +125,9 @@ export function WorkoutEditor() {
                                 </span>
                             )}
                         </div>
+                        {nameError && (
+                            <p className="text-red-500 text-xs mt-1 px-1">{nameError}</p>
+                        )}
                         <div className="text-xs text-gray-400 px-1 mt-1 flex items-center gap-2">
                             <Clock size={12} />
                             <span>Total: {formatDuration(totalDuration)}</span>
@@ -115,7 +150,12 @@ export function WorkoutEditor() {
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="flex items-center gap-2 px-4 py-3 min-h-[44px] bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer active:scale-95"
+                                disabled={!canSave}
+                                className={`flex items-center gap-2 px-4 py-3 min-h-[44px] bg-blue-500 text-white rounded-lg font-medium transition-colors ${
+                                    canSave
+                                        ? 'hover:bg-blue-600 cursor-pointer active:scale-95'
+                                        : 'opacity-50 cursor-not-allowed'
+                                }`}
                                 title="Save Workout"
                             >
                                 <Save size={18} />
