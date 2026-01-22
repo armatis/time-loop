@@ -33,7 +33,7 @@ export function TimerItem({ node }: TimerItemProps) {
             </div>
 
             {/* Row 2 on mobile: Duration + Delete */}
-            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+            <div className="flex items-start sm:items-center justify-between sm:justify-end gap-3 sm:gap-4">
                 <div className="space-y-1">
                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block sm:hidden">
                         Duration
@@ -44,16 +44,18 @@ export function TimerItem({ node }: TimerItemProps) {
                     />
                 </div>
 
-                <button
-                    onClick={() => deleteNode(node.id)}
-                    className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors cursor-pointer"
-                    title="Delete Timer"
-                >
-                    <Trash2 size={18} />
-                </button>
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 sm:gap-4">
+                    <button
+                        onClick={() => deleteNode(node.id)}
+                        className="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors cursor-pointer"
+                        title="Delete Timer"
+                    >
+                        <Trash2 size={18} />
+                    </button>
 
-                <div className="hidden sm:block">
-                    <DragHandle />
+                    <div className="hidden sm:block">
+                        <DragHandle />
+                    </div>
                 </div>
             </div>
         </div>

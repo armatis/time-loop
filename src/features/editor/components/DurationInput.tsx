@@ -41,62 +41,116 @@ export function DurationInput({ value, onChange }: Props) {
     };
 
     return (
-        <div className="flex items-start gap-1 sm:gap-2">
-            {/* HOURS */}
-            <div className="flex flex-col items-center gap-1 group">
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    className="w-14 sm:w-16 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
-                    value={buffer.h}
-                    onChange={(e) => handleChange('h', e.target.value)}
-                    onBlur={handleCommit}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="00"
-                />
-                <span className="text-[10px] items-center text-gray-500 uppercase tracking-wider font-medium group-focus-within:text-blue-500 transition-colors">Hrs</span>
+        <>
+            {/* Mobile: Vertical layout with inline labels */}
+            <div className="flex flex-col gap-2 sm:hidden">
+                {/* HOURS */}
+                <div className="flex items-center gap-2 group">
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="w-14 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
+                        value={buffer.h}
+                        onChange={(e) => handleChange('h', e.target.value)}
+                        onBlur={handleCommit}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="00"
+                    />
+                    <span className="text-xs text-gray-500 font-medium group-focus-within:text-blue-500 transition-colors">hrs</span>
+                </div>
+
+                {/* MINUTES */}
+                <div className="flex items-center gap-2 group">
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="w-14 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
+                        value={buffer.m}
+                        onChange={(e) => handleChange('m', e.target.value)}
+                        onBlur={handleCommit}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="00"
+                    />
+                    <span className="text-xs text-gray-500 font-medium group-focus-within:text-blue-500 transition-colors">min</span>
+                </div>
+
+                {/* SECONDS */}
+                <div className="flex items-center gap-2 group">
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="w-14 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
+                        value={buffer.s}
+                        onChange={(e) => handleChange('s', e.target.value)}
+                        onBlur={handleCommit}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="00"
+                    />
+                    <span className="text-xs text-gray-500 font-medium group-focus-within:text-blue-500 transition-colors">sec</span>
+                </div>
             </div>
 
-            <div className="h-[44px] flex items-center">
-                <span className="text-xl font-bold text-gray-300 dark:text-gray-600">:</span>
-            </div>
+            {/* Desktop: Horizontal layout with labels below */}
+            <div className="hidden sm:flex items-start gap-2">
+                {/* HOURS */}
+                <div className="flex flex-col items-center gap-1 group">
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="w-16 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
+                        value={buffer.h}
+                        onChange={(e) => handleChange('h', e.target.value)}
+                        onBlur={handleCommit}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="00"
+                    />
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-focus-within:text-blue-500 transition-colors">Hrs</span>
+                </div>
 
-            {/* MINUTES */}
-            <div className="flex flex-col items-center gap-1 group">
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    className="w-14 sm:w-16 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
-                    value={buffer.m}
-                    onChange={(e) => handleChange('m', e.target.value)}
-                    onBlur={handleCommit}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="00"
-                />
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-focus-within:text-blue-500 transition-colors">Min</span>
-            </div>
+                <div className="h-[44px] flex items-center">
+                    <span className="text-xl font-bold text-gray-300 dark:text-gray-600">:</span>
+                </div>
 
-            <div className="h-[44px] flex items-center">
-                <span className="text-xl font-bold text-gray-300 dark:text-gray-600">:</span>
-            </div>
+                {/* MINUTES */}
+                <div className="flex flex-col items-center gap-1 group">
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="w-16 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
+                        value={buffer.m}
+                        onChange={(e) => handleChange('m', e.target.value)}
+                        onBlur={handleCommit}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="00"
+                    />
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-focus-within:text-blue-500 transition-colors">Min</span>
+                </div>
 
-            {/* SECONDS */}
-            <div className="flex flex-col items-center gap-1 group">
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    className="w-14 sm:w-16 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
-                    value={buffer.s}
-                    onChange={(e) => handleChange('s', e.target.value)}
-                    onBlur={handleCommit}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="00"
-                />
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-focus-within:text-blue-500 transition-colors">Sec</span>
+                <div className="h-[44px] flex items-center">
+                    <span className="text-xl font-bold text-gray-300 dark:text-gray-600">:</span>
+                </div>
+
+                {/* SECONDS */}
+                <div className="flex flex-col items-center gap-1 group">
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="w-16 p-3 min-h-[44px] text-center border rounded shadow-sm text-lg font-mono bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700"
+                        value={buffer.s}
+                        onChange={(e) => handleChange('s', e.target.value)}
+                        onBlur={handleCommit}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="00"
+                    />
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium group-focus-within:text-blue-500 transition-colors">Sec</span>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
